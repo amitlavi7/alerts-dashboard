@@ -61,7 +61,8 @@ function countEvents(alerts: Alert[]): number {
 function aggregateByDay(
   alerts: Alert[],
   startDate: string,
-  endDate: string
+  endDate: string,
+  group: boolean
 ): TimeSeriesDataPoint[] {
   const byDay: Record<string, Alert[]> = {};
   for (const a of alerts) {
@@ -73,7 +74,7 @@ function aggregateByDay(
   }
   return getDateRange(startDate, endDate).map((date) => ({
     date,
-    count: countEvents(byDay[date] ?? []),
+    count: group ? countEvents(byDay[date] ?? []) : (byDay[date] ?? []).length,
   }));
 }
 
@@ -130,6 +131,7 @@ export function AlertsTimeSeries({
     );
   }
 
+  const shouldGroup = selectedCities.length >= 1;
   const data =
     startDate && endDate
       ? multiCity
@@ -139,7 +141,7 @@ export function AlertsTimeSeries({
             startDate,
             endDate
           )
-        : aggregateByDay(alerts, startDate, endDate)
+        : aggregateByDay(alerts, startDate, endDate, shouldGroup)
       : [];
 
   if (data.length === 0) return null;
