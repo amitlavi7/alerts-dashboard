@@ -44,6 +44,16 @@ npm run build
 npm start
 ```
 
+## Deploy on Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Famitlavi7%2Falerts-dashboard)
+
+1. Click the button above, or go to [vercel.com/new](https://vercel.com/new)
+2. Import `amitlavi7/alerts-dashboard` from GitHub
+3. Click **Deploy**
+
+Your site will be live at `alerts-dashboard-*.vercel.app`.
+
 ## License
 
 MIT
