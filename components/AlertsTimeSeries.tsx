@@ -146,7 +146,9 @@ export function AlertsTimeSeries({
 
   if (data.length === 0) return null;
 
-  const { ref: chartRef, handleMouseEnter, handleBlur, activeOverride } = useTooltipHideOnBlur();
+  const { ref: chartRef, handleMouseEnter, handleBlur, activeOverride } = useTooltipHideOnBlur(
+    "[data-chart-tooltip]"
+  );
   const tooltipStyle = {
     backgroundColor: "var(--background)",
     border: "1px solid var(--foreground)",
@@ -212,6 +214,7 @@ export function AlertsTimeSeries({
                   : null;
                 return (
                   <div
+                    data-chart-tooltip
                     className="rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-600 dark:bg-zinc-800"
                     style={{ pointerEvents: "auto" }}
                     onClick={(e) => e.stopPropagation()}
