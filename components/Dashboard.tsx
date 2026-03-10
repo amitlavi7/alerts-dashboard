@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AlertsTimeSeries } from "./AlertsTimeSeries";
 import { AlertsByHourOfDay } from "./AlertsByHourOfDay";
 import { NextAlertProbability } from "./NextAlertProbability";
@@ -19,6 +20,7 @@ import {
   getAlertsDateBounds,
   getUniqueLocations,
 } from "@/lib/dateUtils";
+import { parseDashboardParams, serializeDashboardParams } from "@/lib/urlParams";
 import type { Alert } from "@/lib/types";
 
 function normalizeAlerts(raw: unknown): Alert[] {
@@ -30,6 +32,8 @@ function normalizeAlerts(raw: unknown): Alert[] {
 }
 
 export function Dashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [alerts, setAlerts] = useState<Alert[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +44,7 @@ export function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const hasInitializedDates = useRef(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const load = async (isRefresh = false) => {
     if (isRefresh) {
@@ -76,6 +81,22 @@ export function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Apply URL params on mount / when URL changes (e.g. shared link, back button)
+  useEffect(() => {
+    const params = parseDashboardParams(searchParams);
+    if (params.start) {
+      setStartDate(params.start);
+      hasInitializedDates.current = true;
+    }
+    if (params.end) {
+      setEndDate(params.end);
+      hasInitializedDates.current = true;
+    }
+    if (params.cities?.length) setSelectedCities(params.cities);
+    if (params.excludeDrills !== undefined) setExcludeDrills(params.excludeDrills);
+  }, [searchParams]);
+
+  // Initialize dates from bounds when no URL params
   useEffect(() => {
     if (alerts && alerts.length > 0 && !hasInitializedDates.current) {
       const bounds = getAlertsDateBounds(alerts);
@@ -91,6 +112,19 @@ export function Dashboard() {
       }
     }
   }, [alerts]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (!startDate && !endDate && selectedCities.length === 0 && !excludeDrills) return;
+    const params = serializeDashboardParams({
+      start: startDate || undefined,
+      end: endDate || undefined,
+      cities: selectedCities.length ? selectedCities : undefined,
+      excludeDrills: excludeDrills || undefined,
+    });
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  }, [startDate, endDate, selectedCities, excludeDrills, router]);
 
   const bounds = alerts ? getAlertsDateBounds(alerts) : null;
   const effectiveBounds = bounds ?? { min: "", max: "" };
@@ -146,11 +180,11 @@ export function Dashboard() {
   }
 
   const sectionCard =
-    "rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900/50";
+    "rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all duration-200 dark:border-zinc-700/80 dark:bg-zinc-900/50";
 
   return (
-    <div className="space-y-8">
-      <section className={sectionCard}>
+    <div className="space-y-8 animate-fade-in-up">
+      <section className={`${sectionCard} hover:shadow-md`}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
@@ -162,14 +196,35 @@ export function Dashboard() {
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => load(true)}
-            disabled={isRefreshing}
-            className="rounded-lg border border-zinc-300 px-3.5 py-2 text-sm font-medium transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
-          >
-            {isRefreshing ? "Refreshing…" : "Refresh data"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const params = serializeDashboardParams({
+                  start: displayStart || undefined,
+                  end: displayEnd || undefined,
+                  cities: selectedCities.length ? selectedCities : undefined,
+                  excludeDrills: excludeDrills || undefined,
+                });
+                const qs = params.toString();
+                const url = `${typeof window !== "undefined" ? window.location.origin + window.location.pathname : ""}${qs ? `?${qs}` : ""}`;
+                await navigator.clipboard.writeText(url);
+                setCopyFeedback(true);
+                setTimeout(() => setCopyFeedback(false), 2000);
+              }}
+              className="rounded-lg border border-zinc-300 px-3.5 py-2 text-sm font-medium transition-all duration-200 hover:bg-zinc-100 active:scale-[0.98] dark:border-zinc-600 dark:hover:bg-zinc-800"
+            >
+              {copyFeedback ? "Copied!" : "Copy link"}
+            </button>
+            <button
+              type="button"
+              onClick={() => load(true)}
+              disabled={isRefreshing}
+              className="rounded-lg border border-zinc-300 px-3.5 py-2 text-sm font-medium transition-all duration-200 hover:bg-zinc-100 active:scale-[0.98] disabled:opacity-50 dark:border-zinc-600 dark:hover:bg-zinc-800"
+            >
+              {isRefreshing ? "Refreshing…" : "Refresh data"}
+            </button>
+          </div>
         </div>
         <div className="space-y-5">
           <div>
@@ -194,7 +249,7 @@ export function Dashboard() {
                 type="checkbox"
                 checked={excludeDrills}
                 onChange={(e) => setExcludeDrills(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-zinc-700 dark:border-zinc-600 dark:bg-zinc-800"
+                className="h-4 w-4 rounded border-zinc-300 text-zinc-700 transition-colors duration-200 dark:border-zinc-600 dark:bg-zinc-800"
               />
               <span className="text-sm">Exclude drills</span>
             </label>
@@ -229,7 +284,7 @@ export function Dashboard() {
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
           Alerts over time
         </h2>
-        <div className={sectionCard}>
+        <div className={`${sectionCard} hover:shadow-md`}>
           <AlertsTimeSeries
             key={`ts-${displayStart}-${displayEnd}`}
             alerts={filteredAlerts}
@@ -243,7 +298,7 @@ export function Dashboard() {
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
           Hourly pattern
         </h2>
-        <div key={`hour-${displayStart}-${displayEnd}`} className={sectionCard}>
+        <div key={`hour-${displayStart}-${displayEnd}`} className={`${sectionCard} hover:shadow-md`}>
           <AlertsByHourOfDay alerts={filteredAlerts} selectedCities={selectedCities} />
         </div>
       </section>
@@ -251,7 +306,7 @@ export function Dashboard() {
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
           By alert type
         </h2>
-        <div key={`cat-${displayStart}-${displayEnd}`} className={sectionCard}>
+        <div key={`cat-${displayStart}-${displayEnd}`} className={`${sectionCard} hover:shadow-md`}>
           <AlertsByCategory alerts={filteredAlerts} selectedCities={selectedCities} />
         </div>
       </section>
@@ -259,7 +314,7 @@ export function Dashboard() {
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-zinc-800 dark:text-zinc-200">
           Top locations
         </h2>
-        <div key={`loc-${displayStart}-${displayEnd}`} className={sectionCard}>
+        <div key={`loc-${displayStart}-${displayEnd}`} className={`${sectionCard} hover:shadow-md`}>
           <AlertsByLocation alerts={filteredAlerts} selectedCities={selectedCities} />
         </div>
       </section>

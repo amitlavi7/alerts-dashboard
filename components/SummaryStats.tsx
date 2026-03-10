@@ -39,7 +39,7 @@ export function SummaryStats({
   const timing = getAlertTimingStats(alertsForOrigin ?? alerts);
 
   const statCard =
-    "rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-shadow hover:shadow dark:border-zinc-700/80 dark:bg-zinc-900/50";
+    "rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 dark:border-zinc-700/80 dark:bg-zinc-900/50";
 
   return (
     <section>

@@ -41,10 +41,10 @@ export function CityFilter({ options, selected, onChange }: CityFilterProps) {
         onFocus={() => setFocused(true)}
         onBlur={() => setTimeout(() => setFocused(false), 150)}
         placeholder="Search and add locations…"
-        className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm transition-colors placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+        className="w-full max-w-md rounded-lg border border-zinc-300 px-3 py-2 text-sm transition-all duration-200 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-400/30 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-500"
       />
       {focused && matches.length > 0 && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full max-w-md overflow-auto rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-600 dark:bg-zinc-800">
+        <div className="absolute z-10 mt-1 max-h-60 w-full max-w-md overflow-auto rounded-lg border border-zinc-200 bg-white shadow-lg animate-fade-in-up dark:border-zinc-600 dark:bg-zinc-800">
           {matches.map((city) => (
             <button
               key={city}
@@ -53,7 +53,7 @@ export function CityFilter({ options, selected, onChange }: CityFilterProps) {
                 e.preventDefault();
                 add(city);
               }}
-              className="block w-full px-3 py-2.5 text-left text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700"
+              className="block w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 hover:bg-zinc-100 dark:hover:bg-zinc-700"
             >
               {city}
             </button>
@@ -65,7 +65,7 @@ export function CityFilter({ options, selected, onChange }: CityFilterProps) {
           {selected.map((city) => (
             <span
               key={city}
-              className="inline-flex items-center gap-1.5 rounded-full bg-zinc-200 px-3 py-1 text-sm dark:bg-zinc-700"
+              className="inline-flex items-center gap-1.5 rounded-full bg-zinc-200 px-3 py-1 text-sm transition-all duration-200 hover:bg-zinc-300 dark:bg-zinc-700 dark:hover:bg-zinc-600"
             >
               {city}
               <button

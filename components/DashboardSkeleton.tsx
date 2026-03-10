@@ -9,14 +9,14 @@ function SkeletonBlock({
 }) {
   return (
     <div
-      className={`animate-pulse rounded bg-zinc-200 dark:bg-zinc-700 ${className}`}
+      className={`animate-pulse rounded-lg bg-zinc-200/80 dark:bg-zinc-700/80 ${className}`}
       style={height ? { height } : undefined}
     />
   );
 }
 
 const cardClass =
-  "rounded-xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900/50";
+  "rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-opacity duration-300 dark:border-zinc-700/80 dark:bg-zinc-900/50";
 
 export function DashboardSkeleton() {
   return (
