@@ -127,6 +127,30 @@ function getLocations(data: string): Set<string> {
   );
 }
 
+/**
+ * Category 14 (imminent) alerts with no category 1 (real alarm) within 15 min after in same area.
+ * These are "false alarms" - imminent warnings that were not followed by an actual missile alert.
+ */
+export function getFalseAlarmAlerts(alerts: Alert[]): Alert[] {
+  const cat14 = alerts.filter((a) => String(a.category) === "14");
+  const cat1 = alerts.filter((a) => String(a.category) === "1");
+  if (cat14.length === 0) return [];
+
+  const cat1ByLoc = indexByLocation(cat1, (a) => new Date(a.alertDate).getTime());
+
+  return cat14.filter((a14) => {
+    const t14 = new Date(a14.alertDate).getTime();
+    const locs14 = getLocations(a14.data ?? "");
+    for (const loc of locs14) {
+      const list = cat1ByLoc.get(loc) ?? [];
+      for (const { time } of list) {
+        if (time >= t14 && time - t14 <= FIFTEEN_MIN_MS) return false;
+      }
+    }
+    return true;
+  });
+}
+
 /** Index alerts by location for fast lookup. */
 function indexByLocation(
   alerts: { alertDate: string; data?: string }[],

@@ -3,18 +3,21 @@ export interface DashboardParams {
   end?: string;
   cities?: string[];
   excludeDrills?: boolean;
+  includeFalseAlarms?: boolean;
 }
 
 const PARAM_START = "s";
 const PARAM_END = "e";
 const PARAM_CITIES = "c";
 const PARAM_EXCLUDE_DRILLS = "x";
+const PARAM_INCLUDE_FALSE_ALARMS = "f";
 
 export function parseDashboardParams(searchParams: URLSearchParams): Partial<DashboardParams> {
   const start = searchParams.get(PARAM_START) ?? searchParams.get("start");
   const end = searchParams.get(PARAM_END) ?? searchParams.get("end");
   const citiesRaw = searchParams.get(PARAM_CITIES) ?? searchParams.get("cities");
   const excludeDrills = searchParams.get(PARAM_EXCLUDE_DRILLS) ?? searchParams.get("excludeDrills");
+  const includeFalseAlarms = searchParams.get(PARAM_INCLUDE_FALSE_ALARMS) ?? searchParams.get("includeFalseAlarms");
 
   const result: Partial<DashboardParams> = {};
   if (start && /^\d{4}-\d{2}-\d{2}$/.test(start)) result.start = start;
@@ -27,6 +30,7 @@ export function parseDashboardParams(searchParams: URLSearchParams): Partial<Das
     if (cities.length > 0) result.cities = cities;
   }
   if (excludeDrills === "1" || excludeDrills === "true") result.excludeDrills = true;
+  if (includeFalseAlarms === "1" || includeFalseAlarms === "true") result.includeFalseAlarms = true;
 
   return result;
 }
@@ -39,5 +43,6 @@ export function serializeDashboardParams(params: DashboardParams): URLSearchPara
     sp.set(PARAM_CITIES, params.cities.map((c) => encodeURIComponent(c)).join(","));
   }
   if (params.excludeDrills) sp.set(PARAM_EXCLUDE_DRILLS, "1");
+  if (params.includeFalseAlarms) sp.set(PARAM_INCLUDE_FALSE_ALARMS, "1");
   return sp;
 }

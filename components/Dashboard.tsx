@@ -18,6 +18,7 @@ import {
   filterAlertsByCities,
   filterAlertsByDateRange,
   getAlertsDateBounds,
+  getFalseAlarmAlerts,
   getUniqueLocations,
 } from "@/lib/dateUtils";
 import { parseDashboardParams, serializeDashboardParams } from "@/lib/urlParams";
@@ -41,6 +42,7 @@ export function Dashboard() {
   const [endDate, setEndDate] = useState("");
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [excludeDrills, setExcludeDrills] = useState(false);
+  const [includeFalseAlarms, setIncludeFalseAlarms] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
   const hasInitializedDates = useRef(false);
@@ -94,6 +96,7 @@ export function Dashboard() {
     }
     if (params.cities?.length) setSelectedCities(params.cities);
     if (params.excludeDrills !== undefined) setExcludeDrills(params.excludeDrills);
+    if (params.includeFalseAlarms !== undefined) setIncludeFalseAlarms(params.includeFalseAlarms);
   }, [searchParams]);
 
   // Initialize dates from bounds when no URL params
@@ -115,16 +118,17 @@ export function Dashboard() {
 
   // Update URL when filters change
   useEffect(() => {
-    if (!startDate && !endDate && selectedCities.length === 0 && !excludeDrills) return;
+    if (!startDate && !endDate && selectedCities.length === 0 && !excludeDrills && !includeFalseAlarms) return;
     const params = serializeDashboardParams({
       start: startDate || undefined,
       end: endDate || undefined,
       cities: selectedCities.length ? selectedCities : undefined,
       excludeDrills: excludeDrills || undefined,
+      includeFalseAlarms: includeFalseAlarms || undefined,
     });
     const qs = params.toString();
     router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
-  }, [startDate, endDate, selectedCities, excludeDrills, router]);
+  }, [startDate, endDate, selectedCities, excludeDrills, includeFalseAlarms, router]);
 
   const bounds = alerts ? getAlertsDateBounds(alerts) : null;
   const effectiveBounds = bounds ?? { min: "", max: "" };
@@ -137,8 +141,16 @@ export function Dashboard() {
     const noDrillsIfExcluded = excludeDrills
       ? noNewsFlash.filter((a) => !isDrill(a.category))
       : noNewsFlash;
-    return filterAlertsByCities(noDrillsIfExcluded, selectedCities);
-  }, [alerts, displayStart, displayEnd, selectedCities, excludeDrills]);
+    let result = filterAlertsByCities(noDrillsIfExcluded, selectedCities);
+    if (includeFalseAlarms) {
+      const falseAlarms = getFalseAlarmAlerts(byDate);
+      const toAdd = filterAlertsByCities(falseAlarms, selectedCities);
+      result = [...result, ...toAdd].sort(
+        (a, b) => new Date(a.alertDate).getTime() - new Date(b.alertDate).getTime()
+      );
+    }
+    return result;
+  }, [alerts, displayStart, displayEnd, selectedCities, excludeDrills, includeFalseAlarms]);
 
   const alertsForOrigin = useMemo(() => {
     if (!alerts) return [];
@@ -205,6 +217,7 @@ export function Dashboard() {
                   end: displayEnd || undefined,
                   cities: selectedCities.length ? selectedCities : undefined,
                   excludeDrills: excludeDrills || undefined,
+                  includeFalseAlarms: includeFalseAlarms || undefined,
                 });
                 const qs = params.toString();
                 const url = `${typeof window !== "undefined" ? window.location.origin + window.location.pathname : ""}${qs ? `?${qs}` : ""}`;
@@ -244,15 +257,29 @@ export function Dashboard() {
             <h3 className="mb-2 text-sm font-medium text-zinc-600 dark:text-zinc-400">
               Alert types
             </h3>
-            <label className="flex cursor-pointer items-center gap-2.5">
-              <input
-                type="checkbox"
-                checked={excludeDrills}
-                onChange={(e) => setExcludeDrills(e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-zinc-700 transition-colors duration-200 dark:border-zinc-600 dark:bg-zinc-800"
-              />
-              <span className="text-sm">Exclude drills</span>
-            </label>
+            <div className="flex flex-wrap gap-6">
+              <label className="flex cursor-pointer items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={excludeDrills}
+                  onChange={(e) => setExcludeDrills(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 text-zinc-700 transition-colors duration-200 dark:border-zinc-600 dark:bg-zinc-800"
+                />
+                <span className="text-sm">Exclude drills</span>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={includeFalseAlarms}
+                  onChange={(e) => setIncludeFalseAlarms(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-300 text-zinc-700 transition-colors duration-200 dark:border-zinc-600 dark:bg-zinc-800"
+                />
+                <span className="text-sm">Include false alarms</span>
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              False alarms: imminent alerts (type 14) with no real alarm within 15 min
+            </p>
           </div>
           <CityFilter
             options={cityOptions}
