@@ -1,5 +1,6 @@
 "use client";
 
+import { useTooltipHideOnBlur } from "@/lib/useTooltipHideOnBlur";
 import {
   BarChart,
   Bar,
@@ -87,6 +88,7 @@ export function AlertsByHourOfDay({
 
   if (alerts.length === 0) return null;
 
+  const { ref: chartRef, handleMouseEnter, handleBlur, activeOverride } = useTooltipHideOnBlur();
   const tooltipStyle = {
     backgroundColor: "var(--background)",
     border: "1px solid var(--foreground)",
@@ -94,7 +96,13 @@ export function AlertsByHourOfDay({
   };
 
   return (
-    <div className="h-64 w-full">
+    <div
+      ref={chartRef}
+      onMouseEnter={handleMouseEnter}
+      onBlur={handleBlur}
+      tabIndex={0}
+      className="h-64 w-full outline-none"
+    >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-700" />
@@ -104,7 +112,7 @@ export function AlertsByHourOfDay({
             className="text-zinc-600 dark:text-zinc-400"
           />
           <YAxis tick={{ fontSize: 12 }} className="text-zinc-600 dark:text-zinc-400" />
-          <Tooltip contentStyle={tooltipStyle} />
+          <Tooltip active={activeOverride} contentStyle={tooltipStyle} />
           {multiCity ? (
             <>
               {selectedCities.map((city, i) => (
